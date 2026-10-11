@@ -15,7 +15,7 @@ struct PlayerBar: View { // swiftlint:disable:this type_body_length
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.playerBarNavigationAction) private var navigationAction
-    @Environment(\.playerBarCurrentAlbumID) private var currentRouteAlbumID
+    @Environment(\.playerBarCurrentAlbumIDs) private var currentRouteAlbumIDs
     @Environment(\.playerBarCurrentArtistID) private var currentRouteArtistID
     @Environment(NowPlayingTracklistProvider.self) private var tracklistProvider: NowPlayingTracklistProvider?
 
@@ -35,6 +35,8 @@ struct PlayerBar: View { // swiftlint:disable:this type_body_length
     @State private var resolvedAlbum: Playlist?
     @State private var isResolvingArtist = false
     @State private var isResolvingAlbum = false
+    @State private var artistResolutionTask: Task<Void, Never>?
+    @State private var albumResolutionTask: Task<Void, Never>?
     @State private var airPlayAnchor = AirPlayPickerAnchor()
 
     /// Cached formatted progress string to avoid repeated formatting.
@@ -117,6 +119,10 @@ struct PlayerBar: View { // swiftlint:disable:this type_body_length
             if self.playerService.duration > 0 {
                 self.seekValue = self.playerService.progress / self.playerService.duration
             }
+        }
+        .onDisappear {
+            // A lookup that finishes after the user left would push onto a stack they no longer see.
+            self.cancelNavigationResolution()
         }
     }
 
@@ -281,11 +287,8 @@ struct PlayerBar: View { // swiftlint:disable:this type_body_length
     }
 
     private var isCurrentAlbumTarget: Bool {
-        guard let currentRouteAlbumID,
-              let album = self.currentAlbumTarget
-        else { return false }
-
-        return album.id == currentRouteAlbumID
+        guard let album = self.currentAlbumTarget else { return false }
+        return PlayerBarCurrentRoute.isAlbum(album, in: self.currentRouteAlbumIDs)
     }
 
     private var showsCurrentAlbumHoverOnly: Bool {
@@ -293,15 +296,12 @@ struct PlayerBar: View { // swiftlint:disable:this type_body_length
     }
 
     private var isResolvingCurrentRouteAlbum: Bool {
-        self.currentRouteAlbumID != nil && self.currentAlbumTarget == nil
+        !self.currentRouteAlbumIDs.isEmpty && self.currentAlbumTarget == nil
     }
 
     private var isCurrentArtistTarget: Bool {
-        guard let currentRouteArtistID,
-              let artist = self.currentArtistTarget
-        else { return false }
-
-        return artist.id == currentRouteArtistID || artist.publicChannelId == currentRouteArtistID
+        guard let artist = self.currentArtistTarget else { return false }
+        return PlayerBarCurrentRoute.isArtist(artist, routeArtistID: self.currentRouteArtistID)
     }
 
     private var currentAlbumPlaylist: Playlist? {
@@ -336,7 +336,8 @@ struct PlayerBar: View { // swiftlint:disable:this type_body_length
             description: nil,
             thumbnailURL: album.thumbnailURL ?? track.thumbnailURL,
             trackCount: album.trackCount,
-            author: Artist.inline(name: album.artistsDisplay, namespace: "album-artist")
+            author: Artist.inline(name: album.artistsDisplay, namespace: "album-artist"),
+            libraryTargetId: album.libraryTargetId
         )
     }
 
@@ -832,8 +833,8 @@ struct PlayerBar: View { // swiftlint:disable:this type_body_length
                 isInLibrary: self.playerService.currentTrackInLibrary,
                 toggle: { self.playerService.toggleLibraryStatus() }
             ),
-            showsGoToArtist: self.navigationAction.openArtist != nil,
-            showsGoToAlbum: self.navigationAction.openAlbum != nil,
+            showsGoToArtist: self.showsGoToArtist(for: track),
+            showsGoToAlbum: self.showsGoToAlbum(for: track),
             navigate: { destination in
                 if let artist = destination as? Artist {
                     self.openArtist(artist)
@@ -876,6 +877,22 @@ struct PlayerBar: View { // swiftlint:disable:this type_body_length
     }
 
     // MARK: - Actions
+
+    /// Whether the context menu offers the track's artist: not when the player bar can't navigate
+    /// or that artist's page is already showing.
+    private func showsGoToArtist(for track: Song) -> Bool {
+        guard self.navigationAction.openArtist != nil else { return false }
+        guard let artist = track.artists.first(where: { $0.hasNavigableId }) else { return true }
+        return !PlayerBarCurrentRoute.isArtist(artist, routeArtistID: self.currentRouteArtistID)
+    }
+
+    /// Whether the context menu offers the track's album: not when the player bar can't navigate
+    /// or that album's page is already showing.
+    private func showsGoToAlbum(for track: Song) -> Bool {
+        guard self.navigationAction.openAlbum != nil else { return false }
+        guard let album = track.album else { return true }
+        return !PlayerBarCurrentRoute.isAlbum(album.detailPlaylist(), in: self.currentRouteAlbumIDs)
+    }
 
     private var hasPersonalAccount: Bool {
         self.authService.hasPersonalAccount
@@ -935,7 +952,7 @@ struct PlayerBar: View { // swiftlint:disable:this type_body_length
 
         self.isResolvingArtist = true
 
-        Task {
+        self.artistResolutionTask = Task {
             let artist = await self.resolveArtist(named: query, client: client)
             guard !Task.isCancelled, self.currentTitleIdentity == identity else { return }
             self.resolvedArtist = artist
@@ -963,7 +980,7 @@ struct PlayerBar: View { // swiftlint:disable:this type_body_length
         let identity = self.currentTitleIdentity
         self.isResolvingAlbum = true
 
-        Task {
+        self.albumResolutionTask = Task {
             let album = await self.resolveAlbum(for: track, client: client)
             guard !Task.isCancelled, self.currentTitleIdentity == identity else { return }
             self.resolvedAlbum = album
@@ -972,6 +989,15 @@ struct PlayerBar: View { // swiftlint:disable:this type_body_length
             guard let album else { return }
             self.openAlbum(album, playsHaptic: false)
         }
+    }
+
+    private func cancelNavigationResolution() {
+        self.artistResolutionTask?.cancel()
+        self.albumResolutionTask?.cancel()
+        self.artistResolutionTask = nil
+        self.albumResolutionTask = nil
+        self.isResolvingArtist = false
+        self.isResolvingAlbum = false
     }
 
     private func openArtist(_ artist: Artist, playsHaptic: Bool = true) {

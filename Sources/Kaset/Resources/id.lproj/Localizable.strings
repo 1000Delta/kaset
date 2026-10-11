@@ -577,3 +577,11 @@
 "Start a new chat to continue." = "Mulai chat baru untuk melanjutkan.";
 "Ask Gemini response ready" = "Respons Tanya Gemini siap";
 "New Ask Gemini chat ready" = "Chat Tanya Gemini baru siap";
+
+// Appearance
+"Appearance" = "Tampilan";
+"App Appearance" = "Tampilan Aplikasi";
+"Choose light or dark mode for Kaset, or match the macOS setting" = "Pilih mode terang atau gelap untuk Kaset, atau ikuti pengaturan macOS";
+"Match System" = "Ikuti Sistem";
+"Light Mode" = "Mode Terang";
+"Dark Mode" = "Mode Gelap";

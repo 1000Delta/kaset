@@ -577,3 +577,11 @@
 "Start a new chat to continue." = "계속하려면 새 채팅을 시작하세요.";
 "Ask Gemini response ready" = "Gemini에게 질문 응답 준비됨";
 "New Ask Gemini chat ready" = "새 Gemini 채팅이 준비되었습니다";
+
+// Appearance
+"Appearance" = "모양";
+"App Appearance" = "앱 모양";
+"Choose light or dark mode for Kaset, or match the macOS setting" = "Kaset의 라이트 또는 다크 모드를 선택하거나 macOS 설정을 따르세요";
+"Match System" = "시스템 설정에 맞춤";
+"Light Mode" = "라이트 모드";
+"Dark Mode" = "다크 모드";

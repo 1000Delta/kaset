@@ -577,3 +577,11 @@
 "Start a new chat to continue." = "Start een nieuwe chat om door te gaan.";
 "Ask Gemini response ready" = "Antwoord van Vraag Gemini is klaar";
 "New Ask Gemini chat ready" = "Nieuwe chat met Vraag Gemini is klaar";
+
+// Appearance
+"Appearance" = "Weergave";
+"App Appearance" = "App-weergave";
+"Choose light or dark mode for Kaset, or match the macOS setting" = "Kies de lichte of donkere modus voor Kaset, of volg de macOS-instelling";
+"Match System" = "Volg systeem";
+"Light Mode" = "Lichte modus";
+"Dark Mode" = "Donkere modus";

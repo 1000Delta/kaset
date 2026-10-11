@@ -577,3 +577,11 @@
 "Start a new chat to continue." = "Devam etmek için yeni bir sohbet başlatın.";
 "Ask Gemini response ready" = "Gemini'ye Sor yanıtı hazır";
 "New Ask Gemini chat ready" = "Yeni Gemini sohbeti hazır";
+
+// Appearance
+"Appearance" = "Görünüm";
+"App Appearance" = "Uygulama Görünümü";
+"Choose light or dark mode for Kaset, or match the macOS setting" = "Kaset için açık veya koyu modu seçin ya da macOS ayarını kullanın";
+"Match System" = "Sistemle Aynı";
+"Light Mode" = "Açık Mod";
+"Dark Mode" = "Koyu Mod";

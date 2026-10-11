@@ -565,6 +565,13 @@ struct KasetApp: App {
                         isFloating: self.youtubePlayerService.surfaceLocation == .floating,
                         isFullscreenOrTransitioning: self.youtubePlayerService.isWindowFullscreen
                     ))
+
+                Divider()
+
+                Picker(String(localized: "Appearance"), selection: self.$settings.appearance) {
+                    ForEach(AppAppearance.allCases) { Text($0.displayName).tag($0) }
+                }
+                .pickerStyle(.menu)
             }
 
             // Window menu - show main window

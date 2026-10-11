@@ -11,6 +11,7 @@ final class SettingsManager {
     // MARK: - Settings Keys
 
     enum Keys {
+        static let appearance = "settings.appearance"
         static let appSource = "settings.appSource"
         static let showNowPlayingNotifications = "settings.showNowPlayingNotifications"
         static let defaultLaunchPage = "settings.defaultLaunchPage"
@@ -244,6 +245,15 @@ final class SettingsManager {
     }
 
     // MARK: - Settings Properties
+
+    /// App-wide light/dark override; `.system` follows macOS.
+    var appearance: AppAppearance {
+        didSet {
+            guard self.appearance != oldValue else { return }
+            UserDefaults.standard.set(self.appearance.rawValue, forKey: Keys.appearance)
+            self.appearance.apply()
+        }
+    }
 
     /// The active content source (YouTube Music or regular YouTube).
     var appSource: AppSource {
@@ -512,8 +522,13 @@ final class SettingsManager {
         defaults.object(forKey: Keys.showYouTubeControlsOnVideo) as? Bool ?? false
     }
 
+    static func loadAppearance(from defaults: UserDefaults) -> AppAppearance {
+        defaults.string(forKey: Keys.appearance).flatMap(AppAppearance.init(rawValue:)) ?? .system
+    }
+
     private init() {
         // Load persisted settings or use defaults
+        self.appearance = Self.loadAppearance(from: UserDefaults.standard)
         self.showNowPlayingNotifications = UserDefaults.standard.object(forKey: Keys.showNowPlayingNotifications) as? Bool ?? true
         self.hapticFeedbackEnabled = UserDefaults.standard.object(forKey: Keys.hapticFeedbackEnabled) as? Bool ?? true
         self.rememberPlaybackSettings = UserDefaults.standard.object(forKey: Keys.rememberPlaybackSettings) as? Bool ?? false

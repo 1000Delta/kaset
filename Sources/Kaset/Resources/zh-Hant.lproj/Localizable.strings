@@ -575,3 +575,11 @@
 "e.g., Remove slow songs, reorder by energy..." = "例如：移除慢歌、依能量重新排序…";
 "songs" = "首歌曲";
 "tracks" = "首曲目";
+
+// Appearance
+"Appearance" = "外觀";
+"App Appearance" = "應用程式外觀";
+"Choose light or dark mode for Kaset, or match the macOS setting" = "為 Kaset 選擇淺色或深色模式，或跟隨 macOS 設定";
+"Match System" = "跟隨系統";
+"Light Mode" = "淺色模式";
+"Dark Mode" = "深色模式";

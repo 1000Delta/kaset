@@ -577,3 +577,11 @@
 "Start a new chat to continue." = "Starta en ny chatt för att fortsätta.";
 "Ask Gemini response ready" = "Svaret från Fråga Gemini är klart";
 "New Ask Gemini chat ready" = "Ny Fråga Gemini-chatt är klar";
+
+// Appearance
+"Appearance" = "Utseende";
+"App Appearance" = "Appens utseende";
+"Choose light or dark mode for Kaset, or match the macOS setting" = "Välj ljust eller mörkt läge för Kaset, eller följ inställningen i macOS";
+"Match System" = "Som systemet";
+"Light Mode" = "Ljust läge";
+"Dark Mode" = "Mörkt läge";

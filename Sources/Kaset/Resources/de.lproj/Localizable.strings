@@ -577,3 +577,11 @@
 "Start a new chat to continue." = "Starte einen neuen Chat, um fortzufahren.";
 "Ask Gemini response ready" = "Antwort von „Gemini fragen“ ist bereit";
 "New Ask Gemini chat ready" = "Neuer Chat mit „Gemini fragen“ ist bereit";
+
+// Appearance
+"Appearance" = "Erscheinungsbild";
+"App Appearance" = "App-Erscheinungsbild";
+"Choose light or dark mode for Kaset, or match the macOS setting" = "Wähle den hellen oder dunklen Modus für Kaset oder übernimm die macOS-Einstellung";
+"Match System" = "Wie im System";
+"Light Mode" = "Heller Modus";
+"Dark Mode" = "Dunkler Modus";

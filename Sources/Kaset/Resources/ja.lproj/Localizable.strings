@@ -572,3 +572,11 @@
 "e.g., Remove slow songs, reorder by energy..." = "例：ゆったりした曲を削除、エネルギー順に並べ替えなど…";
 "songs" = "曲";
 "tracks" = "トラック";
+
+// Appearance
+"Appearance" = "外観";
+"App Appearance" = "アプリの外観";
+"Choose light or dark mode for Kaset, or match the macOS setting" = "Kaset のライトモードまたはダークモードを選択するか、macOS の設定に合わせる";
+"Match System" = "システムに合わせる";
+"Light Mode" = "ライトモード";
+"Dark Mode" = "ダークモード";

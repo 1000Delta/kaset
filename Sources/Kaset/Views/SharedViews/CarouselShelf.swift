@@ -102,11 +102,10 @@ struct CarouselShelf<Content: View>: View {
 
 // MARK: - CarouselShelfHover
 
-/// Whether the pointer is over a shelf, set by the shelf itself: SwiftUI
-/// `.onHover` for ``CarouselShelf``, the AppKit tracking area for
-/// ``HomeItemCollectionShelf`` (SwiftUI re-hit-tests every hover responder on
-/// each scroll frame while content moves under the pointer). Observable, so a
-/// change re-renders only the paging controls, not the shelf content.
+/// Whether the pointer is over a ``CarouselShelf``, set by its `.onHover`.
+/// Observable, so a change re-renders only the paging controls, not the shelf
+/// content. (``HomeItemCollectionShelf`` tracks hover natively for its own
+/// AppKit arrows.)
 @MainActor
 @Observable
 final class CarouselShelfHover {
@@ -115,9 +114,9 @@ final class CarouselShelfHover {
 
 // MARK: - CarouselShelfPagingControls
 
-/// The glass paging arrows, their hover/focus prominence, and the shelf's
-/// accessibility container. Shared by the SwiftUI ``CarouselShelf`` and the
-/// AppKit-backed ``HomeItemCollectionShelf``.
+/// The glass paging arrows of ``CarouselShelf``, their hover/focus prominence,
+/// and the shelf's accessibility container. ``HomeItemCollectionShelf`` draws
+/// native equivalents (`HomeItemShelfArrowView`) that share these labels.
 struct CarouselShelfPagingControls: ViewModifier {
     let accessibilityLabel: String
     let showsLeading: Bool
@@ -180,16 +179,21 @@ struct CarouselShelfPagingControls: ViewModifier {
             x: 0,
             y: self.hasControlProminence ? 4 : 3
         )
-        .accessibilityLabel(self.accessibilityLabel(for: direction))
-        .accessibilityHint(String(localized: "Scrolls this shelf by one page"))
+        .accessibilityLabel(Self.accessibilityLabel(shelf: self.accessibilityLabel, isLeft: direction.isLeft(in: self.layoutDirection)))
+        .accessibilityHint(Self.accessibilityHint)
     }
 
-    private func accessibilityLabel(for direction: CarouselShelfDirection) -> String {
-        if direction.isLeft(in: self.layoutDirection) {
-            String(localized: "Scroll \(self.accessibilityLabel) left")
+    /// Label for the arrow on the left (or right) of a shelf.
+    static func accessibilityLabel(shelf: String, isLeft: Bool) -> String {
+        if isLeft {
+            String(localized: "Scroll \(shelf) left")
         } else {
-            String(localized: "Scroll \(self.accessibilityLabel) right")
+            String(localized: "Scroll \(shelf) right")
         }
+    }
+
+    static var accessibilityHint: String {
+        String(localized: "Scrolls this shelf by one page")
     }
 }
 
@@ -339,11 +343,6 @@ struct CarouselShelfOverflow: Equatable {
 
     init() {}
 
-    init(leading: Bool, trailing: Bool) {
-        self.leading = leading
-        self.trailing = trailing
-    }
-
     fileprivate init(metrics: CarouselShelfScrollMetrics) {
         self.leading = metrics.contentOffsetX > 1
         self.trailing = metrics.remainingContentWidth > 1
@@ -355,6 +354,11 @@ struct CarouselShelfOverflow: Equatable {
 enum CarouselShelfDirection: Hashable {
     case leading
     case trailing
+
+    /// The direction whose control sits on the left (or right) in `layoutDirection`.
+    init(isLeft: Bool, in layoutDirection: LayoutDirection) {
+        self = isLeft == (layoutDirection == .leftToRight) ? .leading : .trailing
+    }
 
     func isLeft(in layoutDirection: LayoutDirection) -> Bool {
         (self == .leading) == (layoutDirection == .leftToRight)

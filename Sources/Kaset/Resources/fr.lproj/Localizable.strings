@@ -104,6 +104,7 @@
 "Continue Watching" = "Continuer à regarder";
 "Control playback with your keyboard" = "Contrôlez la lecture avec votre clavier";
 "Controls appear when you move the pointer over the video and fade out while it plays." = "Les commandes apparaissent lorsque vous déplacez le pointeur sur la vidéo et s'estompent pendant la lecture.";
+"Copy Link" = "Copier le lien";
 "Could not create AI session" = "Impossible de créer la session IA";
 "Couldn't capture Kaset's audio (status %d). Check Screen & System Audio Recording permission in System Settings." = "Impossible de capturer l'audio de Kaset (état %d). Vérifiez l'autorisation Enregistrement de l'écran et de l'audio système dans Réglages Système.";
 "Couldn't configure the audio unit (%lld)." = "Impossible de configurer l'unité audio (%lld).";

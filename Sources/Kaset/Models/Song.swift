@@ -169,6 +169,16 @@ struct Song: Identifiable, Codable, Hashable {
         )
     }
 
+    /// An ID-only song titled "Loading..." whose title, artists and artwork are filled in later.
+    static func placeholder(videoId: String) -> Song {
+        Song(
+            id: videoId,
+            title: "Loading...",
+            artists: [],
+            videoId: videoId
+        )
+    }
+
     /// Display string for artists (comma-separated).
     var artistsDisplay: String {
         self.artists.map(\.name).joined(separator: ", ")

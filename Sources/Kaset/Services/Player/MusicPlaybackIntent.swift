@@ -552,13 +552,15 @@ extension PlayerService {
             && self.activePlaybackQueueEntryID == self.currentQueueEntryID
     }
 
+    /// Whether no track, pending video or episode is loaded, so any queue has not started playing yet.
+    var hasNoLoadedMusicPlayback: Bool {
+        self.currentTrack == nil
+            && self.pendingPlayVideoId == nil
+            && self.currentEpisode == nil
+    }
+
     var shouldUseNativeQueueForTrackNavigation: Bool {
-        self.activePlaybackOwnsCurrentQueueEntry
-            || (
-                self.currentTrack == nil
-                    && self.pendingPlayVideoId == nil
-                    && self.currentEpisode == nil
-            )
+        self.activePlaybackOwnsCurrentQueueEntry || self.hasNoLoadedMusicPlayback
     }
 
     func invalidateMixContinuationRequest() {

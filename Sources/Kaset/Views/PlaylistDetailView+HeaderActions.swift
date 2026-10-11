@@ -73,7 +73,6 @@ extension PlaylistDetailView {
             )
         } label: {
             self.headerActionLabel(localized: "Play", systemImage: "play.fill", showsTitle: showsTitles)
-                .foregroundStyle(.white)
         }
         .buttonStyle(.glassProminent)
         .controlSize(.large)

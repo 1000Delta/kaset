@@ -19,7 +19,6 @@ private struct CookieArchiveRollbackState: Sendable {
 // MARK: - CookieArchiveLiveBaseline
 
 enum CookieArchiveLiveBaseline: Sendable {
-    case empty
     case archive(Data)
     case persistedArchive
 }
@@ -532,8 +531,6 @@ actor CookieArchiveWriteQueue {
         let wasRestoreAllowed = self.storage.restoreDecision() == .allowed
         let persistedArchiveData = self.storage.load()
         let capturedLiveArchiveData: Data? = switch liveBaseline {
-        case .empty:
-            nil
         case let .archive(data):
             data
         case .persistedArchive:
@@ -690,25 +687,6 @@ actor CookieArchiveWriteQueue {
         self.rollingBackTransactionID = nil
         _ = self.generationTracker.reserveGeneration()
         return self.storage.setRestoreAllowed(false)
-    }
-
-    func invalidateAndDeleteIfLatest(
-        generation: UInt64
-    ) -> CookieArchiveSaveResult {
-        guard self.generationTracker.isLatest(generation),
-              self.activeTransactionID == nil,
-              self.rollingBackTransactionID == nil
-        else {
-            return .superseded
-        }
-
-        let didInvalidateRestore = self.storage.setRestoreAllowed(false)
-        let didDelete = self.storage.delete()
-        let didDeleteDebugArchive = !self.storage.exportsDebugArchive
-            || self.storage.deleteDebugArchive()
-        return didInvalidateRestore && didDelete && didDeleteDebugArchive
-            ? .saved
-            : .failed
     }
 
     @discardableResult

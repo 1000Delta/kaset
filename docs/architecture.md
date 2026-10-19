@@ -920,23 +920,27 @@ ForEach(Array(chartItems.enumerated()), id: \.element.id) { index, item in
 }
 ```
 
-#### Throttled UI Updates
+#### Isolating Playback Progress Updates
 
-For frequently changing values (e.g., playback progress at 60Hz), cache formatted strings:
+Playback progress changes on every bridge tick. Observation invalidates exactly the views that read a property, and `.onChange(of:)` counts as a read, so keep progress reads in small leaf views instead of in a player bar or window body:
 
 ```swift
-// In PlayerBar
-@State private var formattedProgress: String = "0:00"
-@State private var lastProgressSecond: Int = -1
+// In PlayerBar: owns the seek state but never reads progress or the
+// controller's properties in body, so ticks skip song info, artwork, and buttons.
+@State private var seekController = PlayerBarSeekController()
 
+PlayerBarTimelineLane(seekController: seekController, segments: segments, accent: accent)
+
+// In PlayerBarTimelineLane: the only player bar view that reads progress
 .onChange(of: playerService.progress) { _, newValue in
-    let currentSecond = Int(newValue)
-    if currentSecond != lastProgressSecond {
-        lastProgressSecond = currentSecond
-        formattedProgress = formatTime(newValue)  // Only 1x per second
-    }
+    seekController.progressDidChange(newValue, duration: playerService.duration)
 }
 ```
+
+- `PlayerBarTimelineLane`, `MiniPlayerSeekSection`, and `YouTubePlayerBarTimelineLane` are the only player views that read progress. Don't add progress reads to `PlayerBar`, `MiniPlayerWindow`, or `YouTubePlayerBar`.
+- Compute values that don't depend on progress, such as mix segments, in the parent and pass them in.
+- Cache formatted time strings and rebuild them only when the displayed second changes (`PlayerBarSeekController.progressDidChange`).
+- On an `@Observable` class, calling a mutating method on a stored struct notifies observers even when nothing changes. On per-tick paths, mutate a copy and assign it back only if it differs (see `PlayerBarSeekController.reconcileHold`).
 
 #### Task Cancellation
 

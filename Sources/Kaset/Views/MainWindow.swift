@@ -202,6 +202,27 @@ struct MainWindow: View { // swiftlint:disable:this type_body_length
                     }
                 }
             }
+            .onChange(of: self.appIntentsLibrary, initial: true) { _, library in
+                guard let library else { return }
+                AppIntentsBridge.shared.updateLibrary(library)
+            }
+            .onChange(of: self.libraryViewModel?.currentAccountScopeGeneration) { oldGeneration, _ in
+                // An account switch empties the Library, possibly mid-load. Drop the previous
+                // account's snapshot now rather than when the new account's Library loads.
+                guard oldGeneration != nil else { return }
+                AppIntentsBridge.shared.updateLibrary(.empty)
+            }
+    }
+
+    /// The Library as Shortcuts, Siri, and Spotlight should see it: empty when no personal
+    /// account is signed in, and nil (keep the last snapshot) while it is still loading.
+    private var appIntentsLibrary: AppIntentsLibrary? {
+        guard !self.authService.state.isInitializing else { return nil }
+        guard self.authService.hasPersonalAccount else { return .empty }
+        guard let libraryViewModel = self.libraryViewModel, libraryViewModel.loadingState == .loaded else {
+            return nil
+        }
+        return AppIntentsLibrary(playlists: libraryViewModel.playlists, albums: libraryViewModel.albums)
     }
 
     private var windowChrome: some View {

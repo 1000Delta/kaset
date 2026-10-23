@@ -234,7 +234,6 @@ struct SimpleLyricsView: View {
     @Environment(PlayerService.self) private var playerService
     @Environment(LyricsPresentationModel.self) private var lyricsModel
 
-    let client: any YTMusicClientProtocol
     var showsHeader = true
     var preferredWidth: CGFloat? = 280
 

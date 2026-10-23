@@ -24,18 +24,27 @@ final class LyricsPresentationModel {
     }
 
     func setDemand(_ id: UUID, active: Bool) {
+        let wasActive = self.demands.contains(id)
         if active {
             self.demands.insert(id)
         } else {
             self.demands.remove(id)
         }
         self.polling.setDemand(id, active: active)
+        // A newly opened surface may retry a failed load; successful results stay per track.
+        if active, !wasActive, self.didLoad, !self.currentLyrics.isAvailable {
+            self.didLoad = false
+        }
         self.loadIfNeeded()
     }
 
     /// Pass nil for advertisements, regular YouTube video playback, or no current music item.
     func updateTrack(_ info: LyricsSearchInfo?, syncedEnabled: Bool) {
-        guard self.videoId != info?.videoId || self.syncedEnabled != syncedEnabled else { return }
+        guard self.videoId != info?.videoId || self.syncedEnabled != syncedEnabled else {
+            // Late WebView metadata can correct title/artist for the same item.
+            self.info = info
+            return
+        }
         self.generation += 1
         self.task?.cancel()
         self.task = nil

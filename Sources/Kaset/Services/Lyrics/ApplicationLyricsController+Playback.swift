@@ -19,21 +19,10 @@ extension ApplicationLyricsController {
                 syncedEnabled: settings.syncedLyricsEnabled, menuBarEnabled: settings.menuBarLyricsEnabled
             )
         }, polling: polling) { info, syncedEnabled in
-            guard !Task.isCancelled else { return .unavailable }
-            if syncedEnabled {
-                await service.fetchLyrics(for: info)
+            let loader = ApplicationLyricsLoader(service: service) { videoId in
+                try await client.getLyrics(videoId: videoId)
             }
-            guard !Task.isCancelled else { return .unavailable }
-            if case .unavailable = service.currentLyrics {
-                do {
-                    let plain = try await client.getLyrics(videoId: info.videoId)
-                    guard !Task.isCancelled else { return .unavailable }
-                    service.fallbackToPlainLyrics(plain, videoId: info.videoId)
-                } catch {
-                    DiagnosticsLogger.api.error("Failed to load plain lyrics fallback: \(error.localizedDescription)")
-                }
-            }
-            return service.currentLyrics
+            return await loader.load(info, syncedEnabled: syncedEnabled)
         }
     }
 }

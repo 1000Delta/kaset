@@ -308,9 +308,9 @@ struct MiniPlayerWindow: View {
                 case .lyrics:
                     Group {
                         if !self.settings.useLegacyMacOS15UI, #available(macOS 26.0, *) {
-                            LyricsView(client: self.client, showsHeader: false, preferredWidth: nil)
+                            LyricsView(showsHeader: false, preferredWidth: nil)
                         } else {
-                            SimpleLyricsView(client: self.client, showsHeader: false, preferredWidth: nil)
+                            SimpleLyricsView(showsHeader: false, preferredWidth: nil)
                         }
                     }
                     .accessibilityIdentifier(AccessibilityID.MiniPlayer.lyricsView)

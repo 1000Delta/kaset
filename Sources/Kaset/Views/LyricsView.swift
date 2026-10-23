@@ -7,7 +7,6 @@ struct LyricsView: View {
     @Environment(PlayerService.self) private var playerService
     @Environment(LyricsPresentationModel.self) private var lyricsModel
 
-    let client: any YTMusicClientProtocol
     var showsHeader = true
     var preferredWidth: CGFloat? = 280
 
@@ -454,9 +453,11 @@ struct LyricsView: View {
 
 @available(macOS 26.0, *)
 #Preview {
-    let authService = AuthService()
-    let client = YTMusicClient(authService: authService, webKitManager: .shared)
-    LyricsView(client: client)
+    LyricsView()
         .environment(PlayerService())
+        .environment(LyricsPresentationModel(
+            polling: LyricsDemandCoordinator(start: { _ in }, stop: {}, resetDisplay: {}),
+            load: { _, _ in .unavailable }
+        ))
         .frame(height: 600)
 }

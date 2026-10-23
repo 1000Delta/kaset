@@ -30,5 +30,16 @@ struct MenuBarLyricsLocalizationTests {
                 }
             }
         }
+
+        // SwiftPM/Xcode runtime builds load the checked-in `.lproj` mirrors, not
+        // the catalog, so every mirror must carry the same keys.
+        for locale in locales {
+            let mirror = resources.appendingPathComponent("\(locale).lproj/Localizable.strings")
+            let data = try Data(contentsOf: mirror)
+            let strings = try PropertyListSerialization.propertyList(from: data, format: nil) as? [String: String]
+            for key in keys {
+                #expect(strings?[key] != nil, "Missing \(locale) mirror: \(key)")
+            }
+        }
     }
 }

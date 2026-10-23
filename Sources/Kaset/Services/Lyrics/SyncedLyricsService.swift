@@ -143,9 +143,9 @@ final class SyncedLyricsService {
 
     /// Fallback logic
     func fallbackToPlainLyrics(_ lyrics: Lyrics, videoId: String) {
-        // Preserve initial cache seeding, but never accept an unscoped fallback after track clear.
-        guard self.currentVideoId == videoId || (self.currentVideoId == nil && self.fetchGeneration == 0) else { return }
-        self.currentVideoId = videoId
+        // Only the selected track may accept plain lyrics; a late request for a
+        // previous track must never replace the current result.
+        guard self.currentVideoId == videoId else { return }
         if case .synced = self.currentLyrics {
             // Already synced, don't overwrite with plain
             return

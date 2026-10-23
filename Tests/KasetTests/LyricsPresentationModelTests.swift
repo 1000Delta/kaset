@@ -100,6 +100,27 @@ struct LyricsPresentationModelTests {
         #expect(model.currentLyrics == .unavailable)
     }
 
+    @Test func reopeningAfterFailureRetriesTheLoad() async {
+        let gate = LyricsLoadGate()
+        let model = Self.model(gate)
+        let first = UUID()
+        model.updateTrack(Self.info("A"), syncedEnabled: true)
+        model.setDemand(first, active: true)
+        await Self.settle()
+        gate.finish("A:true", with: .unavailable)
+        await Self.settle()
+        #expect(!model.currentLyrics.isAvailable)
+
+        model.setDemand(first, active: false)
+        model.setDemand(UUID(), active: true)
+        await Self.settle()
+
+        #expect(gate.requests == ["A:true", "A:true"])
+        gate.finish("A:true", with: .plain(Lyrics(text: "retry", source: nil)))
+        await Self.settle()
+        #expect(model.currentLyrics == .plain(Lyrics(text: "retry", source: nil)))
+    }
+
     @Test func refreshForWrongTrackIsIgnored() {
         let gate = LyricsLoadGate()
         let model = Self.model(gate)

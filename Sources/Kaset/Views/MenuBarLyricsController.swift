@@ -6,7 +6,7 @@ import SwiftUI
 
 /// Native status item: explicit bounded geometry, a full-text tooltip, and no label-side timer.
 @MainActor
-final class MenuBarLyricsController: NSObject {
+final class MenuBarLyricsController: NSObject, NSPopoverDelegate {
     private let model: LyricsPresentationModel
     private let player: PlayerService
     private let arbiter: PlaybackArbiter
@@ -14,7 +14,11 @@ final class MenuBarLyricsController: NSObject {
     private let settings: SettingsManager
     private var statusItem: NSStatusItem?
     private let popover = NSPopover()
+    private var launchObserver: NSObjectProtocol?
     var openMainWindow: (() -> Void)?
+
+    /// Horizontal room AppKit reserves around a status-item title (measured at ~15 pt per side).
+    private static let titlePadding: CGFloat = 30
 
     init(model: LyricsPresentationModel, player: PlayerService, arbiter: PlaybackArbiter, youtubePlayer: YouTubePlayerService, settings: SettingsManager) {
         self.model = model
@@ -24,7 +28,20 @@ final class MenuBarLyricsController: NSObject {
         self.settings = settings
         super.init()
         self.popover.behavior = .transient
-        self.observeLabel()
+        self.popover.delegate = self
+        // The app constructs this during `KasetApp.init`, which can run before
+        // AppKit finishes launching. A status item created that early is unreliable.
+        if NSApp.isRunning {
+            self.observeLabel()
+        } else {
+            self.launchObserver = NotificationCenter.default.addObserver(
+                forName: NSApplication.didFinishLaunchingNotification,
+                object: nil,
+                queue: .main
+            ) { [weak self] _ in
+                Task { @MainActor [weak self] in self?.observeLabel() }
+            }
+        }
     }
 
     var trackTitle: String {
@@ -142,17 +159,28 @@ final class MenuBarLyricsController: NSObject {
         }
 
         let font = NSFont.menuBarFont(ofSize: 0)
+        // Restore title rendering: the idle branch switched the cell to image-only,
+        // and a nil image with `.imageOnly` leaves the title with an empty rect.
+        button.imagePosition = .noImage
         button.image = nil
         button.font = font
         button.title = presentation.current
         button.cell?.usesSingleLineMode = true
         button.cell?.lineBreakMode = .byTruncatingTail
-        let naturalWidth = (presentation.current as NSString).size(withAttributes: [.font: font]).width + 16
+        let textWidth = (presentation.current as NSString).size(withAttributes: [.font: font]).width
+        let naturalWidth = textWidth + Self.titlePadding
         item.length = min(CGFloat(MenuBarLyricsPreferences.clampWidth(maxWidth)), max(24, ceil(naturalWidth)))
         button.toolTip = presentation.current
         button.setAccessibilityLabel(String(localized: "Menu Bar Lyrics"))
         button.setAccessibilityValue(presentation.current)
         button.setAccessibilityHelp(String(localized: "Show lyrics and playback controls"))
+    }
+
+    /// Breaks the popover → hosting controller → view → controller reference loop.
+    nonisolated func popoverDidClose(_: Notification) {
+        Task { @MainActor [weak self] in
+            self?.popover.contentViewController = nil
+        }
     }
 
     @objc private func togglePopover() {
@@ -189,11 +217,13 @@ private struct MenuBarLyricsPopover: View {
                 }
             }
             Divider()
-            Text(presentation.current)
-                .font(.body.weight(.medium))
-                .textSelection(.enabled)
-                .accessibilityLabel(String(localized: "Current Lyric"))
-                .accessibilityValue(presentation.current)
+            if presentation.current != self.controller.trackTitle {
+                Text(presentation.current)
+                    .font(.body.weight(.medium))
+                    .textSelection(.enabled)
+                    .accessibilityLabel(String(localized: "Current Lyric"))
+                    .accessibilityValue(presentation.current)
+            }
             if let next = presentation.next {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(String(localized: "Next Lyric")).font(.caption).foregroundStyle(.secondary)

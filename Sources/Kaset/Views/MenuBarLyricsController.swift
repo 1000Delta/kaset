@@ -105,21 +105,28 @@ final class MenuBarLyricsController: NSObject, NSPopoverDelegate {
         let snapshot = withObservationTracking {
             // Include language so native tooltip/accessibility strings refresh without reopening.
             _ = self.settings.contentLanguage
-            return (
-                self.settings.menuBarLyricsEnabled,
-                self.settings.menuBarLyricsMaxWidth,
-                self.hasPlayableItem,
-                self.presentation
+            return LabelSnapshot(
+                enabled: self.settings.menuBarLyricsEnabled,
+                maxWidth: self.settings.menuBarLyricsMaxWidth,
+                hasPlayableItem: self.hasPlayableItem,
+                presentation: self.presentation
             )
         } onChange: { [weak self] in
             Task { @MainActor [weak self] in self?.observeLabel() }
         }
         self.updateStatusItem(
-            enabled: snapshot.0,
-            maxWidth: snapshot.1,
-            hasPlayableItem: snapshot.2,
-            presentation: snapshot.3
+            enabled: snapshot.enabled,
+            maxWidth: snapshot.maxWidth,
+            hasPlayableItem: snapshot.hasPlayableItem,
+            presentation: snapshot.presentation
         )
+    }
+
+    private struct LabelSnapshot {
+        let enabled: Bool
+        let maxWidth: Double
+        let hasPlayableItem: Bool
+        let presentation: MenuBarLyricsPresentation
     }
 
     private func updateStatusItem(

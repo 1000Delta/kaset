@@ -18,11 +18,11 @@ extension ApplicationLyricsController {
                 track: info, isShowingAd: player.isShowingAd, isMusicSource: arbiter.activeSource == .music,
                 syncedEnabled: settings.syncedLyricsEnabled, menuBarEnabled: settings.menuBarLyricsEnabled
             )
-        }, polling: polling) { info, syncedEnabled in
+        }, polling: polling, load: { info, syncedEnabled in
             let loader = ApplicationLyricsLoader(service: service) { videoId in
                 try await client.getLyrics(videoId: videoId)
             }
             return await loader.load(info, syncedEnabled: syncedEnabled)
-        }
+        })
     }
 }

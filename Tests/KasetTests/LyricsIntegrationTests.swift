@@ -18,10 +18,12 @@ struct LyricsIntegrationTests {
     @Test func launchOwnsObservationAndBothWindowsReceiveSameModel() throws {
         let app = try Self.source("Sources/Kaset/KasetApp.swift")
         let initializer = app.components(separatedBy: "    var body: some Scene")[0]
-        #expect(initializer.contains("ApplicationLyricsController("))
-        #expect(initializer.contains("MenuBarLyricsController("))
-        #expect(app.contains(".environment(self.applicationLyricsController.model)"))
-        #expect(app.contains("lyricsModel: self.applicationLyricsController.model"))
+        #expect(initializer.contains("AppLyricsWiring("))
+        let wiring = try Self.source("Sources/Kaset/AppLyricsWiring.swift")
+        #expect(wiring.contains("ApplicationLyricsController("))
+        #expect(wiring.contains("MenuBarLyricsController("))
+        #expect(app.contains(".environment(self.lyrics.controller.model)"))
+        #expect(app.contains("lyricsModel: self.lyrics.controller.model"))
         let mini = try Self.source("Sources/Kaset/MiniPlayerWindowController.swift")
         #expect(mini.contains(".environment(lyricsModel)"))
         let menu = try Self.source("Sources/Kaset/Views/MenuBarLyricsController.swift")

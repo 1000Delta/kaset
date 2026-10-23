@@ -6,7 +6,7 @@ concurrency:
 
 on:
   push:
-    branches: [main]
+    branches: [main, feat/menu-bar-lyrics]
     paths:
       - "**.swift"
       - "Package.swift"
@@ -28,6 +28,15 @@ on:
       - "Tests/**"
       - ".github/workflows/tests.yml"
   workflow_dispatch:
+    inputs:
+      run_ui_tests:
+        description: "Explicitly authorize launching the app for UI tests"
+        type: boolean
+        default: false
+        required: false
+
+permissions:
+  contents: read
 
 jobs:
   macos_unit_tests:
@@ -90,9 +99,41 @@ jobs:
         # Suites share process-wide app singletons, including the playback
         # WebView. Serialize both runners so another suite cannot invalidate
         # a test's document generation while its bridge events are queued.
-        run: swift test -q --skip KasetUITests --disable-xctest --no-parallel
+        run: |
+          set -o pipefail
+          swift test -q --skip KasetUITests --disable-xctest --no-parallel 2>&1 | tee unit-tests.log
+
+      - name: Build isolated debug app
+        if: matrix.os == 'macos-26'
+        env:
+          KASET_SIGNING: adhoc
+          ARCHES: arm64
+        run: |
+          Scripts/build-app.sh debug
+          Scripts/verify-release-app.sh --bundle-id com.sertacozercan.Kaset.debug .build/app/Kaset.app
+          ditto -c -k --sequesterRsrc --keepParent .build/app/Kaset.app .build/app/Kaset-menu-bar-lyrics.zip
+
+      - name: Upload debug app
+        if: matrix.os == 'macos-26'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v4
+        with:
+          name: kaset-menu-bar-lyrics-${{ github.sha }}
+          path: .build/app/Kaset-menu-bar-lyrics.zip
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload unit test log
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v4
+        with:
+          name: unit-tests-${{ matrix.os }}-${{ github.sha }}
+          path: unit-tests.log
+          if-no-files-found: warn
+          retention-days: 14
 
   macos_ui_tests:
+    # UI tests are disruptive and require an explicit manual opt-in.
+    if: github.event_name == 'workflow_dispatch' && inputs.run_ui_tests
     name: macOS UI Tests (${{ matrix.os }})
     timeout-minutes: 30
     runs-on: ${{ matrix.os }}

@@ -76,12 +76,15 @@ struct GeneralSettingsView: View {
             Section {
                 Toggle(String(localized: "Show Lyrics in Menu Bar"), isOn: self.$settings.menuBarLyricsEnabled)
                     .help(String(localized: "Show the current synced lyric, or the track title when no line is available."))
-                Slider(
-                    String(localized: "Maximum Menu Bar Width"),
-                    value: self.$settings.menuBarLyricsMaxWidth,
-                    in: MenuBarLyricsPreferences.widthRange,
-                    step: 20
-                )
+                LabeledContent(String(localized: "Maximum Menu Bar Width")) {
+                    Slider(
+                        value: self.$settings.menuBarLyricsMaxWidth,
+                        in: MenuBarLyricsPreferences.widthRange,
+                        step: 20
+                    )
+                    .labelsHidden()
+                    .frame(width: 180)
+                }
                 .disabled(!self.settings.menuBarLyricsEnabled)
                 Text(String(localized: "Menu bar lyrics remain available when the main window is closed."))
                     .font(.caption)

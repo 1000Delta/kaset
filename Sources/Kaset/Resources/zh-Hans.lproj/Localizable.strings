@@ -630,3 +630,14 @@
 "No songs found for “%@”." = "未找到与“%@”匹配的歌曲。";
 "Couldn't play “%@”." = "无法播放“%@”。";
 "Couldn't rate “%@”." = "无法评价“%@”。";
+
+// Menu bar lyrics
+"Show Lyrics in Menu Bar" = "在菜单栏显示歌词";
+"Show the current synced lyric, or the track title when no line is available." = "显示当前同步歌词；没有可用歌词时显示曲目标题。";
+"Maximum Menu Bar Width" = "菜单栏最大宽度";
+"Menu bar lyrics remain available when the main window is closed." = "关闭主窗口后仍可使用菜单栏歌词。";
+"Menu Bar Lyrics" = "菜单栏歌词";
+"Show lyrics and playback controls" = "显示歌词和播放控制";
+"Current Lyric" = "当前歌词";
+"Next Lyric" = "下一句歌词";
+"Open Main Window" = "打开主窗口";

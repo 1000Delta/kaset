@@ -57,7 +57,8 @@ struct KasetApp: App {
     @State private var accountService: AccountService?
     @State private var scrobblingCoordinator: ScrobblingCoordinator
     @State private var nowPlayingTracklistProvider: NowPlayingTracklistProvider
-    @State private var syncedLyricsService: SyncedLyricsService
+    @State private var applicationLyricsController: ApplicationLyricsController
+    @State private var menuBarLyricsController: MenuBarLyricsController
     @State private var equalizerService = EqualizerService.shared
     @State private var settings = SettingsManager.shared
     @State private var podcastsAvailabilityService = PodcastsAvailabilityService()
@@ -184,10 +185,17 @@ struct KasetApp: App {
         _playbackArbiter = State(initialValue: arbiter)
         _sharedClient = State(initialValue: client)
         _sharedYouTubeClient = State(initialValue: youtubeClient)
-        _syncedLyricsService = State(initialValue: SyncedLyricsService(providers: [
+        let lyricsService = SyncedLyricsService(providers: [
             YTMusicSyncedProvider(client: client),
             LRCLibProvider(),
-        ]))
+        ])
+        let lyricsController = ApplicationLyricsController(
+            player: player, arbiter: arbiter, service: lyricsService, client: client, settings: .shared
+        )
+        _applicationLyricsController = State(initialValue: lyricsController)
+        _menuBarLyricsController = State(initialValue: MenuBarLyricsController(
+            model: lyricsController.model, player: player, arbiter: arbiter, youtubePlayer: youtubePlayer, settings: .shared
+        ))
         _notificationService = State(initialValue: NotificationService(playerService: player))
         _accountService = State(initialValue: account)
 
@@ -249,7 +257,7 @@ struct KasetApp: App {
                 .environment(self.accountService)
                 .environment(self.scrobblingCoordinator)
                 .environment(self.nowPlayingTracklistProvider)
-                .environment(self.syncedLyricsService)
+                .environment(self.applicationLyricsController.model)
                 .environment(self.equalizerService)
                 .environment(self.podcastsAvailabilityService)
                 .environment(\.searchFocusTrigger, self.$searchFocusTrigger)
@@ -277,6 +285,7 @@ struct KasetApp: App {
                     // Drain any cold-launch URLs once `onReceive` below is subscribed.
                     self.appDelegate.beginOpenURLDelivery()
                     AppIntentsBridge.shared.setShowMainWindowHandler { self.showMainWindow() }
+                    self.menuBarLyricsController.openMainWindow = { self.showMainWindow() }
                     // Reference notificationService to keep SwiftUI from deallocating it
                     _ = self.notificationService
                 }
@@ -625,7 +634,7 @@ struct KasetApp: App {
             MiniPlayerWindowController.shared.show(
                 playerService: self.playerService,
                 client: self.sharedClient,
-                syncedLyricsService: self.syncedLyricsService,
+                lyricsModel: self.applicationLyricsController.model,
                 authService: self.authService
             )
             if self.playerService.miniPlayerMode == .switchFromMainWindow {

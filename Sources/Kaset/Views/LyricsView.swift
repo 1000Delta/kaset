@@ -5,14 +5,13 @@ import SwiftUI
 @available(macOS 26.0, *)
 struct LyricsView: View {
     @Environment(PlayerService.self) private var playerService
-    @Environment(SyncedLyricsService.self) private var syncedLyricsService
+    @Environment(LyricsPresentationModel.self) private var lyricsModel
 
     let client: any YTMusicClientProtocol
     var showsHeader = true
     var preferredWidth: CGFloat? = 280
 
-    @State private var lastLoadedVideoId: String?
-    @State private var isLoadingFallback = false
+    @State private var lyricsDemandID = UUID()
 
     // AI explanation state
     @State private var lyricsSummary: LyricsSummary?
@@ -44,44 +43,14 @@ struct LyricsView: View {
             .compatGlassID("lyricsPanel", in: self.lyricsNamespace)
         }
         .compatGlassTransition(.materialize)
-        .onChange(of: self.playerService.currentTrack?.videoId) { _, newVideoId in
-            if let videoId = newVideoId, videoId != lastLoadedVideoId {
-                // Reset explanation when track changes
-                self.lyricsSummary = nil
-                self.partialSummary = nil
-                self.showExplanation = false
-                self.explanationError = nil
-                Task {
-                    await self.loadLyrics(for: videoId)
-                }
-            }
+        .onChange(of: self.playerService.currentTrack?.videoId) { _, _ in
+            self.lyricsSummary = nil
+            self.partialSummary = nil
+            self.showExplanation = false
+            self.explanationError = nil
         }
-        .task {
-            if let videoId = playerService.currentTrack?.videoId {
-                await self.loadLyrics(for: videoId)
-            }
-        }
-        .onChange(of: self.syncedLyricsService.currentLyrics) { _, newLyrics in
-            self.updateLyricsPolling(for: newLyrics)
-        }
-        .onDisappear {
-            SingletonPlayerWebView.shared.stopLyricsPoll()
-        }
-        .onAppear {
-            self.updateLyricsPolling(for: self.syncedLyricsService.currentLyrics)
-        }
-    }
-
-    private func updateLyricsPolling(for result: LyricResult) {
-        if case let .synced(synced) = result {
-            self.playerService.currentLyricsLineIndex = nil
-            self.playerService.currentLyricsDisplayTimeMs = nil
-            SingletonPlayerWebView.shared.startLyricsPoll(lineRanges: synced.bridgeLineRanges)
-        } else {
-            SingletonPlayerWebView.shared.stopLyricsPoll()
-            self.playerService.currentLyricsLineIndex = nil
-            self.playerService.currentLyricsDisplayTimeMs = nil
-        }
+        .onAppear { self.lyricsModel.setDemand(self.lyricsDemandID, active: true) }
+        .onDisappear { self.lyricsModel.setDemand(self.lyricsDemandID, active: false) }
     }
 
     // MARK: - Header
@@ -94,7 +63,7 @@ struct LyricsView: View {
             Spacer()
 
             // Explain button (AI-powered)
-            if self.syncedLyricsService.currentLyrics.isAvailable {
+            if self.lyricsModel.currentLyrics.isAvailable {
                 Button {
                     if self.showExplanation {
                         self.showExplanation = false
@@ -133,10 +102,10 @@ struct LyricsView: View {
     private var contentView: some View {
         if self.playerService.currentTrack == nil {
             self.noTrackPlayingView
-        } else if self.syncedLyricsService.isLoading || self.isLoadingFallback {
+        } else if self.lyricsModel.isLoading {
             self.loadingView
         } else {
-            switch self.syncedLyricsService.currentLyrics {
+            switch self.lyricsModel.currentLyrics {
             case let .synced(synced):
                 self.syncedLyricsContentView(synced)
             case let .plain(plain):
@@ -392,58 +361,8 @@ struct LyricsView: View {
 
     // MARK: - Data Loading
 
-    @MainActor
-    private func loadLyrics(for videoId: String) async {
-        self.lastLoadedVideoId = videoId
-        self.isLoadingFallback = false
-
-        guard let track = playerService.currentTrack else { return }
-
-        // Don't search if it's not the current track anymore
-        guard track.videoId == videoId else { return }
-
-        let info = LyricsSearchInfo(
-            title: track.title,
-            artist: track.artistsDisplay,
-            album: track.album?.title,
-            duration: track.duration,
-            videoId: track.videoId
-        )
-
-        if SettingsManager.shared.syncedLyricsEnabled {
-            await self.syncedLyricsService.fetchLyrics(for: info)
-        } else {
-            self.syncedLyricsService.currentLyrics = .unavailable
-            self.syncedLyricsService.activeProvider = nil
-        }
-
-        guard self.lastLoadedVideoId == videoId else { return }
-        guard self.playerService.currentTrack?.videoId == videoId else { return }
-
-        // As a fallback to provide plain lyrics
-        if case .unavailable = self.syncedLyricsService.currentLyrics {
-            self.isLoadingFallback = true
-            defer {
-                if self.lastLoadedVideoId == videoId {
-                    self.isLoadingFallback = false
-                }
-            }
-
-            do {
-                let fetchedLyrics = try await client.getLyrics(videoId: videoId)
-                if self.lastLoadedVideoId == videoId,
-                   self.playerService.currentTrack?.videoId == videoId
-                {
-                    self.syncedLyricsService.fallbackToPlainLyrics(fetchedLyrics, videoId: videoId)
-                }
-            } catch {
-                DiagnosticsLogger.api.error("Failed to load plain lyrics fallback: \(error.localizedDescription)")
-            }
-        }
-    }
-
     private func explainLyrics() async {
-        guard self.syncedLyricsService.currentLyrics.isAvailable,
+        guard self.lyricsModel.currentLyrics.isAvailable,
               let track = playerService.currentTrack
         else { return }
 
@@ -466,7 +385,7 @@ struct LyricsView: View {
         }
 
         var textToExplain: String
-        switch self.syncedLyricsService.currentLyrics {
+        switch self.lyricsModel.currentLyrics {
         case let .synced(synced):
             textToExplain = synced.lines.map(\.text).joined(separator: "\n")
         case let .plain(plain):

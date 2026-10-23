@@ -38,7 +38,13 @@ final class SyncedLyricsService {
 
     /// Monotonic identifier used to ignore stale in-flight searches.
     private var fetchGeneration = 0
-    private var inFlight: (videoId: String, generation: Int, task: Task<Void, Never>)?
+    private struct InFlightFetch {
+        let videoId: String
+        let generation: Int
+        let task: Task<Void, Never>
+    }
+
+    private var inFlight: InFlightFetch?
     private(set) var currentVideoId: String?
 
     init(providers: [LyricsProvider], displayLyrics: @escaping @MainActor (SyncedLyrics) -> SyncedLyrics) {
@@ -60,7 +66,7 @@ final class SyncedLyricsService {
         }
         self.currentVideoId = info.videoId
         let task = Task { await self.performFetch(for: info, requestID: requestID) }
-        self.inFlight = (info.videoId, requestID, task)
+        self.inFlight = InFlightFetch(videoId: info.videoId, generation: requestID, task: task)
         await task.value
         if self.inFlight?.generation == requestID {
             self.inFlight = nil

@@ -31,7 +31,7 @@ final class MenuBarLyricsController: NSObject, NSPopoverDelegate {
         self.popover.delegate = self
         // The app constructs this during `KasetApp.init`, which can run before
         // AppKit finishes launching. A status item created that early is unreliable.
-        if NSApp.isRunning {
+        if NSApp?.isRunning == true {
             self.observeLabel()
         } else {
             self.launchObserver = NotificationCenter.default.addObserver(

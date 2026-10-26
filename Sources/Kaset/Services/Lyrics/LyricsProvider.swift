@@ -3,7 +3,7 @@ import Foundation
 // MARK: - LyricsSearchInfo
 
 /// Information needed to search for lyrics.
-struct LyricsSearchInfo {
+struct LyricsSearchInfo: Equatable {
     let title: String
     let artist: String
     let album: String?

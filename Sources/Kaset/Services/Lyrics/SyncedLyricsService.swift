@@ -28,7 +28,7 @@ final class SyncedLyricsService {
     private let providers: [LyricsProvider]
 
     /// Romanization service for transliterating non-Latin lyrics.
-    private let romanizationService = RomanizationService()
+    private let displayLyrics: @MainActor (SyncedLyrics) -> SyncedLyrics
 
     /// In-memory cache keyed by videoId.
     private var cache: [String: LyricResult] = [:]
@@ -38,15 +38,43 @@ final class SyncedLyricsService {
 
     /// Monotonic identifier used to ignore stale in-flight searches.
     private var fetchGeneration = 0
+    private struct InFlightFetch {
+        let videoId: String
+        let generation: Int
+        let task: Task<Void, Never>
+    }
 
-    init(providers: [LyricsProvider] = [LRCLibProvider()]) {
+    private var inFlight: InFlightFetch?
+    private(set) var currentVideoId: String?
+
+    init(providers: [LyricsProvider], displayLyrics: @escaping @MainActor (SyncedLyrics) -> SyncedLyrics) {
         self.providers = providers
-        self.observeRomanizationSetting()
+        self.displayLyrics = displayLyrics
     }
 
     func fetchLyrics(for info: LyricsSearchInfo) async {
+        if let inFlight = self.inFlight, inFlight.videoId == info.videoId {
+            await inFlight.task.value
+            return
+        }
         self.fetchGeneration += 1
         let requestID = self.fetchGeneration
+        if self.currentVideoId != info.videoId {
+            self.currentLyrics = .unavailable
+            self.currentBaseSyncedLyrics = nil
+            self.activeProvider = nil
+        }
+        self.currentVideoId = info.videoId
+        let task = Task { await self.performFetch(for: info, requestID: requestID) }
+        self.inFlight = InFlightFetch(videoId: info.videoId, generation: requestID, task: task)
+        await task.value
+        if self.inFlight?.generation == requestID {
+            self.inFlight = nil
+        }
+    }
+
+    private func performFetch(for info: LyricsSearchInfo, requestID: Int) async {
+        guard requestID == self.fetchGeneration else { return }
         let cached = self.cache[info.videoId]
 
         if let cached, case .synced = cached {
@@ -107,8 +135,23 @@ final class SyncedLyricsService {
         self.applyResolvedLyrics(resolved, requestID: requestID)
     }
 
+    /// Invalidates even providers that ignore cancellation (track nil, ad, video, or settings change).
+    func clearLyrics(for videoId: String? = nil) {
+        self.fetchGeneration += 1
+        self.inFlight?.task.cancel()
+        self.inFlight = nil
+        self.currentVideoId = videoId
+        self.currentBaseSyncedLyrics = nil
+        self.currentLyrics = .unavailable
+        self.activeProvider = nil
+        self.isLoading = false
+    }
+
     /// Fallback logic
     func fallbackToPlainLyrics(_ lyrics: Lyrics, videoId: String) {
+        // Only the selected track may accept plain lyrics; a late request for a
+        // previous track must never replace the current result.
+        guard self.currentVideoId == videoId else { return }
         if case .synced = self.currentLyrics {
             // Already synced, don't overwrite with plain
             return
@@ -127,38 +170,9 @@ final class SyncedLyricsService {
         }
     }
 
-    private func observeRomanizationSetting() {
-        withObservationTracking {
-            _ = SettingsManager.shared.romanizationEnabled
-        } onChange: { [weak self] in
-            Task { @MainActor [weak self] in
-                self?.refreshCurrentRomanization()
-                self?.observeRomanizationSetting()
-            }
-        }
-    }
-
-    private func refreshCurrentRomanization() {
+    func refreshCurrentRomanization() {
         guard let baseLyrics = self.currentBaseSyncedLyrics else { return }
-        self.currentLyrics = .synced(self.displayLyrics(from: baseLyrics))
-    }
-
-    private func displayLyrics(from synced: SyncedLyrics) -> SyncedLyrics {
-        guard self.romanizationService.isEnabled else {
-            return synced
-        }
-
-        let romanized = self.romanizationService.romanizeAll(synced)
-        guard !romanized.isEmpty else {
-            return synced
-        }
-
-        var updatedLines = synced.lines
-        for index in updatedLines.indices {
-            updatedLines[index].romanizedText = romanized[updatedLines[index].id]
-        }
-
-        return SyncedLyrics(lines: updatedLines, source: synced.source)
+        self.currentLyrics = .synced(self.displayLyrics(baseLyrics))
     }
 
     private func resultRank(_ result: LyricResult) -> Int {
@@ -227,7 +241,7 @@ final class SyncedLyricsService {
 
         if case let .synced(synced) = resolved.result {
             self.currentBaseSyncedLyrics = synced
-            self.currentLyrics = .synced(self.displayLyrics(from: synced))
+            self.currentLyrics = .synced(self.displayLyrics(synced))
         } else {
             self.currentBaseSyncedLyrics = nil
             self.currentLyrics = resolved.result

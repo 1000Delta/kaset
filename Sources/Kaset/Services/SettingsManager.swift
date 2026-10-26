@@ -357,6 +357,24 @@ final class SettingsManager {
         }
     }
 
+    /// Opt-in menu bar surface. Polling is shared with all other lyric consumers.
+    var menuBarLyricsEnabled: Bool {
+        didSet {
+            UserDefaults.standard.set(self.menuBarLyricsEnabled, forKey: MenuBarLyricsPreferences.enabledKey)
+        }
+    }
+
+    /// Maximum status-item width in points, including native button padding.
+    var menuBarLyricsMaxWidth: Double {
+        didSet {
+            let clamped = MenuBarLyricsPreferences.clampWidth(self.menuBarLyricsMaxWidth)
+            if clamped != self.menuBarLyricsMaxWidth {
+                self.menuBarLyricsMaxWidth = clamped
+            }
+            UserDefaults.standard.set(clamped, forKey: MenuBarLyricsPreferences.widthKey)
+        }
+    }
+
     /// Whether romanization of non-Latin lyrics is enabled.
     var romanizationEnabled: Bool {
         didSet {
@@ -545,6 +563,8 @@ final class SettingsManager {
         self.scrobblePercentThreshold = UserDefaults.standard.object(forKey: Keys.scrobblePercentThreshold) as? Double ?? 0.5
         self.scrobbleMinSeconds = UserDefaults.standard.object(forKey: Keys.scrobbleMinSeconds) as? Double ?? 240
         self.syncedLyricsEnabled = UserDefaults.standard.object(forKey: Keys.syncedLyricsEnabled) as? Bool ?? true
+        self.menuBarLyricsEnabled = MenuBarLyricsPreferences.loadEnabled(from: UserDefaults.standard)
+        self.menuBarLyricsMaxWidth = MenuBarLyricsPreferences.loadWidth(from: UserDefaults.standard)
         self.romanizationEnabled = UserDefaults.standard.object(forKey: Keys.romanizationEnabled) as? Bool ?? true
         self.keepMiniPlayerOnTop = UserDefaults.standard.object(forKey: Keys.keepMiniPlayerOnTop) as? Bool ?? false
         self.keepYouTubeVideoOnTop = Self.loadKeepYouTubeVideoOnTop(from: UserDefaults.standard)

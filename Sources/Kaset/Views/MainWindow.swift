@@ -595,7 +595,7 @@ struct MainWindow: View { // swiftlint:disable:this type_body_length
             .frame(maxWidth: .infinity, maxHeight: .infinity)
 
             // Right sidebar overlay - either lyrics or queue (mutually exclusive)
-            self.rightSidebarOverlay(client: self.client)
+            self.rightSidebarOverlay()
         }
         .animation(.easeInOut(duration: 0.25), value: self.playerService.showLyrics)
         .animation(.easeInOut(duration: 0.25), value: self.playerService.showQueue)
@@ -633,7 +633,7 @@ struct MainWindow: View { // swiftlint:disable:this type_body_length
 
     /// Right sidebar overlay showing either lyrics or queue as glass panels (mutually exclusive).
     @ViewBuilder
-    private func rightSidebarOverlay(client: any YTMusicClientProtocol) -> some View {
+    private func rightSidebarOverlay() -> some View {
         let showRightSidebar = self.playerService.showLyrics || self.playerService.showQueue
 
         if showRightSidebar {
@@ -643,9 +643,9 @@ struct MainWindow: View { // swiftlint:disable:this type_body_length
                 Group {
                     if self.playerService.showLyrics {
                         if !self.usesLegacyMacOS15UI, #available(macOS 26.0, *) {
-                            LyricsView(client: client)
+                            LyricsView()
                         } else {
-                            SimpleLyricsView(client: client)
+                            SimpleLyricsView()
                         }
                     } else if self.playerService.showQueue {
                         if self.playerService.queueDisplayMode == .sidepanel {

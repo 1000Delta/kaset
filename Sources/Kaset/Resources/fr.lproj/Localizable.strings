@@ -632,3 +632,14 @@
 "No songs found for “%@”." = "Aucun morceau trouvé pour « %@ ».";
 "Couldn't play “%@”." = "Impossible de lire « %@ ».";
 "Couldn't rate “%@”." = "Impossible d'évaluer « %@ ».";
+
+// Menu bar lyrics
+"Show Lyrics in Menu Bar" = "Show Lyrics in Menu Bar";
+"Show the current synced lyric, or the track title when no line is available." = "Show the current synced lyric, or the track title when no line is available.";
+"Maximum Menu Bar Width" = "Maximum Menu Bar Width";
+"Menu bar lyrics remain available when the main window is closed." = "Menu bar lyrics remain available when the main window is closed.";
+"Menu Bar Lyrics" = "Menu Bar Lyrics";
+"Show lyrics and playback controls" = "Show lyrics and playback controls";
+"Current Lyric" = "Current Lyric";
+"Next Lyric" = "Next Lyric";
+"Open Main Window" = "Open Main Window";

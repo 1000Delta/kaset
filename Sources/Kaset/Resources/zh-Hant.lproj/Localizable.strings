@@ -630,3 +630,14 @@
 "No songs found for “%@”." = "找不到符合「%@」的歌曲。";
 "Couldn't play “%@”." = "無法播放「%@」。";
 "Couldn't rate “%@”." = "無法評價「%@」。";
+
+// Menu bar lyrics
+"Show Lyrics in Menu Bar" = "在選單列顯示歌詞";
+"Show the current synced lyric, or the track title when no line is available." = "顯示目前的同步歌詞；沒有可用歌詞時顯示曲目標題。";
+"Maximum Menu Bar Width" = "選單列最大寬度";
+"Menu bar lyrics remain available when the main window is closed." = "關閉主視窗後仍可使用選單列歌詞。";
+"Menu Bar Lyrics" = "選單列歌詞";
+"Show lyrics and playback controls" = "顯示歌詞與播放控制";
+"Current Lyric" = "目前歌詞";
+"Next Lyric" = "下一句歌詞";
+"Open Main Window" = "開啟主視窗";

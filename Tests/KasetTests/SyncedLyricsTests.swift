@@ -160,6 +160,7 @@ struct SyncedLyricsServiceTests {
         let service = SyncedLyricsService(providers: [provider])
         let videoId = "video-fallback"
 
+        service.clearLyrics(for: videoId)
         service.fallbackToPlainLyrics(plain, videoId: videoId)
 
         #expect(service.currentLyrics == .plain(plain))
@@ -179,6 +180,7 @@ struct SyncedLyricsServiceTests {
         let service = SyncedLyricsService(providers: [provider])
         let videoId = "video-fallback-plain"
 
+        service.clearLyrics(for: videoId)
         service.fallbackToPlainLyrics(plain, videoId: videoId)
 
         await service.fetchLyrics(for: Self.makeSearchInfo(videoId: videoId))

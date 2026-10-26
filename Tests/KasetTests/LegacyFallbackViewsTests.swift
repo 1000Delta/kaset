@@ -34,14 +34,11 @@ struct LegacyFallbackViewsTests {
 
     @Test("SimpleLyricsView accepts custom header and width configuration")
     func simpleLyricsViewConstructs() {
-        let client = MockYTMusicClient()
-
-        let defaultView = SimpleLyricsView(client: client)
+        let defaultView = SimpleLyricsView()
         #expect(defaultView.showsHeader == true)
         #expect(defaultView.preferredWidth == 280)
 
         let customView = SimpleLyricsView(
-            client: client,
             showsHeader: false,
             preferredWidth: nil
         )
